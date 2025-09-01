@@ -1,8 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from '../../src/auth/auth.service';
-import { UsersService } from '../../src/users/users.service';
 import { User } from '../../src/users/entities/user.entity';
+import { UsersService } from '../../src/users/users.service';
 
 describe('AuthService', () => {
     let service: AuthService;
@@ -34,7 +34,7 @@ describe('AuthService', () => {
     });
 
     describe('validateUser', () => {
-        it('should return user if found', async () => {
+        it('deve retornar o usuário se encontrado', async () => {
             const email = 'test@example.com';
             const password = 'password123';
             const mockUser = { id: '1', email, password: 'hashed' } as User;
@@ -46,7 +46,7 @@ describe('AuthService', () => {
             expect(usersService.findOneByEmail).toHaveBeenCalledWith(email);
         });
 
-        it('should return null if user not found', async () => {
+        it('deve retornar null se o usuário não for encontrado', async () => {
             const email = 'test@example.com';
             const password = 'password123';
 
@@ -58,7 +58,7 @@ describe('AuthService', () => {
     });
 
     describe('login', () => {
-        it('should return access token', async () => {
+        it('deve retornar um token de acesso', async () => {
             const loginDto = { email: 'test@example.com', password: 'password123' };
             const mockUser = { id: '1', email: 'test@example.com' } as User;
             const mockToken = 'jwt-token';
@@ -79,7 +79,7 @@ describe('AuthService', () => {
             });
         });
 
-        it('should throw error for invalid credentials', async () => {
+        it('deve lançar erro para credenciais inválidas', async () => {
             const loginDto = { email: 'test@example.com', password: 'wrongpassword' };
 
             jest.spyOn(service, 'validateUser').mockResolvedValue(undefined);

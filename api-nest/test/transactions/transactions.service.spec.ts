@@ -32,7 +32,7 @@ describe('TransactionsService', () => {
     });
 
     describe('create', () => {
-        it('should create a deposit transaction', async () => {
+        it('deve criar uma transação de depósito', async () => {
             const createDto: CreateTransactionDto = {
                 accountId: 'account123',
                 type: TransactionType.DEPOSIT,
@@ -50,7 +50,7 @@ describe('TransactionsService', () => {
             expect(result).toBeInstanceOf(Transaction);
         });
 
-        it('should throw error for account not found', async () => {
+        it('deve lançar erro se a conta não for encontrada', async () => {
             const createDto: CreateTransactionDto = {
                 accountId: 'account123',
                 type: TransactionType.DEPOSIT,
@@ -64,7 +64,7 @@ describe('TransactionsService', () => {
     });
 
     describe('findAllByAccount', () => {
-        it('should return transactions for account', async () => {
+        it('deve retornar transações de uma conta', async () => {
             const accountId = 'account123';
             const mockTransactions = [new Transaction(), new Transaction()];
 

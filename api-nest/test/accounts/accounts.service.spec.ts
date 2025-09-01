@@ -39,7 +39,7 @@ describe('AccountsService', () => {
     });
 
     describe('create', () => {
-        it('should create an account successfully', async () => {
+        it('deve criar uma conta com sucesso', async () => {
             const createAccountDto: CreateAccountDto = { type: AccountType.CHECKING };
             const userId = 'user123';
             const mockUser = { id: userId, email: 'test@example.com' };
@@ -61,7 +61,7 @@ describe('AccountsService', () => {
     });
 
     describe('findAllByUser', () => {
-        it('should return accounts for user', async () => {
+        it('deve retornar todas as contas de um usuário', async () => {
             const userId = 'user123';
             const mockAccounts = [new Account(), new Account()];
 
@@ -69,7 +69,37 @@ describe('AccountsService', () => {
 
             const result = await service.findAllByUser(userId);
             expect(result).toEqual(mockAccounts);
-            expect(accountRepository.find).toHaveBeenCalledWith({ where: { id: userId } });
+            expect(accountRepository.find).toHaveBeenCalledWith({ where: { user: { id: userId } } });
+        });
+    });
+
+    describe('findOne', () => {
+        it('deve retornar uma conta específica por ID para um usuário', async () => {
+            const accountId = 'account123';
+            const userId = 'user123';
+            const mockAccount = new Account();
+
+            jest.spyOn(accountRepository, 'findOne').mockResolvedValue(mockAccount);
+
+            const result = await service.findOne(accountId, userId);
+            expect(result).toBe(mockAccount);
+            expect(accountRepository.findOne).toHaveBeenCalledWith({
+                where: { id: accountId, user: { id: userId } },
+                relations: ['user'],
+            });
+        });
+
+        it('deve lançar NotFoundException quando a conta não for encontrada', async () => {
+            const accountId = 'account123';
+            const userId = 'user123';
+
+            jest.spyOn(accountRepository, 'findOne').mockResolvedValue(null);
+
+            await expect(service.findOne(accountId, userId)).rejects.toThrow('Account not found');
+            expect(accountRepository.findOne).toHaveBeenCalledWith({
+                where: { id: accountId, user: { id: userId } },
+                relations: ['user'],
+            });
         });
     });
 });

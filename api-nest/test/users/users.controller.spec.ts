@@ -27,7 +27,7 @@ describe('UsersController', () => {
     });
 
     describe('create', () => {
-        it('should create a user', async () => {
+        it('deve criar um usuário', async () => {
             const createUserDto: CreateUserDto = {
                 email: 'test@example.com',
                 password: 'password123',
@@ -45,7 +45,7 @@ describe('UsersController', () => {
     });
 
     describe('findOne', () => {
-        it('should return a user', async () => {
+        it('deve retornar um usuário por ID', async () => {
             const userId = 'user123';
             const mockUser = new User();
             jest.spyOn(usersService, 'findOne').mockResolvedValue(mockUser);

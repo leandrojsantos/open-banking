@@ -23,7 +23,7 @@ describe('AppController (e2e)', () => {
     }
   });
 
-  it('/health (GET)', () => {
+  it('deve retornar status de saúde da aplicação', () => {
     return request(app.getHttpServer())
       .get('/health')
       .expect(200)

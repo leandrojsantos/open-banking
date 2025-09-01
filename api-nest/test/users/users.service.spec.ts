@@ -25,7 +25,7 @@ describe('UsersService', () => {
     });
 
     describe('create', () => {
-        it('should create a new user', async () => {
+        it('deve criar um novo usuário', async () => {
             const createUserDto: CreateUserDto = {
                 email: 'test@example.com',
                 password: 'password123',
@@ -45,7 +45,7 @@ describe('UsersService', () => {
     });
 
     describe('findOne', () => {
-        it('should return a user', async () => {
+        it('deve retornar um usuário por ID', async () => {
             const userId = 'user123';
             const mockUser = new User();
 
@@ -56,7 +56,7 @@ describe('UsersService', () => {
             expect(userRepository.findOneBy).toHaveBeenCalledWith({ id: userId });
         });
 
-        it('should return undefined if user not found', async () => {
+        it('deve retornar undefined se o usuário não for encontrado', async () => {
             const userId = 'nonexistent';
 
             jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(null);
@@ -67,7 +67,7 @@ describe('UsersService', () => {
     });
 
     describe('findOneByEmail', () => {
-        it('should return a user by email', async () => {
+        it('deve retornar um usuário por email', async () => {
             const email = 'test@example.com';
             const mockUser = new User();
 
@@ -78,7 +78,7 @@ describe('UsersService', () => {
             expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email } });
         });
 
-        it('should return undefined if user not found', async () => {
+        it('deve retornar undefined se o usuário não for encontrado', async () => {
             const email = 'nonexistent@example.com';
 
             jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);

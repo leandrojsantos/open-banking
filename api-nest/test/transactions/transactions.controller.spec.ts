@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { User } from '../../src/users/entities/user.entity';
 import { CreateTransactionDto } from '../../src/transactions/dto/create-transaction.dto';
 import { Transaction, TransactionType } from '../../src/transactions/entities/transaction.entity';
 import { TransactionsController } from '../../src/transactions/transactions.controller';
 import { TransactionsService } from '../../src/transactions/transactions.service';
+import { User } from '../../src/users/entities/user.entity';
 
 describe('TransactionsController', () => {
     let controller: TransactionsController;
@@ -38,7 +38,7 @@ describe('TransactionsController', () => {
     });
 
     describe('create', () => {
-        it('should create a transaction', async () => {
+        it('deve criar uma transação', async () => {
             const accountId = 'account123';
             const createDto: CreateTransactionDto = {
                 accountId: 'account123',
@@ -55,7 +55,7 @@ describe('TransactionsController', () => {
     });
 
     describe('findAll', () => {
-        it('should return transactions for account', async () => {
+        it('deve retornar transações de uma conta', async () => {
             const accountId = 'account123';
             const mockTransactions = [
                 { id: '1', amount: 100, type: TransactionType.DEPOSIT, description: 'test', account: {}, createdAt: new Date() },

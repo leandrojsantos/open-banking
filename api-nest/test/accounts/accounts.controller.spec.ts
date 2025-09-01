@@ -42,7 +42,7 @@ describe('AccountsController', () => {
     });
 
     describe('create', () => {
-        it('should create an account', async () => {
+        it('deve criar uma conta bancária', async () => {
             const createAccountDto: CreateAccountDto = { type: AccountType.CHECKING };
             const mockAccount = new Account();
 
@@ -55,7 +55,7 @@ describe('AccountsController', () => {
     });
 
     describe('findAll', () => {
-        it('should return user accounts', async () => {
+        it('deve retornar todas as contas do usuário', async () => {
             const mockAccounts = [new Account(), new Account()];
 
             jest.spyOn(accountsService, 'findAllByUser').mockResolvedValue(mockAccounts);
@@ -67,7 +67,7 @@ describe('AccountsController', () => {
     });
 
     describe('findOne', () => {
-        it('should return a specific account', async () => {
+        it('deve retornar uma conta específica', async () => {
             const accountId = 'account123';
             const mockAccount = new Account();
 
