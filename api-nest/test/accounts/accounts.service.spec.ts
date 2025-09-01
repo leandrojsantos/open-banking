@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { User } from '@users/entities/user.entity';
 import { AccountsService } from '../../src/accounts/accounts.service';
 import { CreateAccountDto } from '../../src/accounts/dto/create-account.dto';
 import { Account } from '../../src/accounts/entities/account.entity';
 import { AccountType } from '../../src/accounts/enums/account-type.enum';
+import { User } from '../../src/users/entities/user.entity';
 
 describe('AccountsService', () => {
     let service: AccountsService;
@@ -69,7 +69,7 @@ describe('AccountsService', () => {
 
             const result = await service.findAllByUser(userId);
             expect(result).toEqual(mockAccounts);
-            expect(accountRepository.find).toHaveBeenCalledWith({ where: { user: { id: userId } } });
+            expect(accountRepository.find).toHaveBeenCalledWith({ where: { id: userId } });
         });
     });
 });

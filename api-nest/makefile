@@ -14,7 +14,7 @@ SERVICO_APP = app
 SERVICO_DB = db
 SCRIPT_MIGRACAO = /app/scripts/run-migrations.js
 
-.PHONY: ajuda verificar-dependencias iniciar limpar construir iniciar-app parar logs migrar verificar-saude verificar-banco testar listar-recursos
+.PHONY: ajuda verificar-dependencias iniciar limpar construir iniciar-app parar logs migrar verificar-saude verificar-banco testar listar-recursos db-connect db-pgadmin db-status db-logs db-backup db-restore db-reset
 
 ajuda:
 	@echo "$(AMARELO)⚙️  Comandos disponíveis:$(NC)"
@@ -31,6 +31,15 @@ ajuda:
 	@echo "$(VERDE)make verificar-saude$(NC)    - Verifica saúde da aplicação"
 	@echo "$(VERDE)make verificar-banco$(NC)    - Verifica estado do banco"
 	@echo "$(VERDE)make testar$(NC)             - Testa endpoints da API"
+	@echo ""
+	@echo "$(AMARELO)🗄️  COMANDOS DO BANCO:$(NC)"
+	@echo "$(VERDE)make db-connect$(NC)         - Conecta ao PostgreSQL via psql"
+	@echo "$(VERDE)make db-pgadmin$(NC)         - Acessa informações do pgAdmin4"
+	@echo "$(VERDE)make db-status$(NC)          - Mostra status dos containers"
+	@echo "$(VERDE)make db-logs$(NC)            - Mostra logs do banco"
+	@echo "$(VERDE)make db-backup$(NC)          - Cria backup do banco"
+	@echo "$(VERDE)make db-restore$(NC)         - Restaura backup do banco"
+	@echo "$(VERDE)make db-reset$(NC)           - Reseta o banco (cuidado!)"
 
 verificar-dependencias:
 	@echo "$(AMARELO)🔍 Verificando dependências...$(NC)"
@@ -136,3 +145,36 @@ testar: verificar-saude
 	echo "$(VERDE)✅ Health endpoint OK!$(NC)" || \
 	(echo "$(VERMELHO)❌ Health endpoint falhou!$(NC)" && exit 1)
 	@echo "$(VERDE)✅ Todos os testes passaram!$(NC)"
+
+# Comandos do banco de dados
+db-connect:
+	@echo "$(AMARELO)🔌 Conectando ao PostgreSQL...$(NC)"
+	@./scripts/connect-db.sh
+
+db-pgadmin:
+	@echo "$(AMARELO)🔌 Acessando pgAdmin4...$(NC)"
+	@./scripts/connect-pgadmin.sh
+
+db-status:
+	@echo "$(AMARELO)📊 Status do banco de dados...$(NC)"
+	@./scripts/db-commands.sh status
+
+db-logs:
+	@echo "$(AMARELO)📋 Logs do banco de dados...$(NC)"
+	@./scripts/db-commands.sh logs
+
+db-backup:
+	@echo "$(AMARELO)💾 Criando backup do banco...$(NC)"
+	@./scripts/db-commands.sh backup
+
+db-restore:
+	@echo "$(AMARELO)🔄 Restaurando backup do banco...$(NC)"
+	@if [ -z "$(file)" ]; then \
+		echo "$(VERMELHO)❌ Especifique o arquivo: make db-restore file=backups/arquivo.sql$(NC)"; \
+		exit 1; \
+	fi
+	@./scripts/db-commands.sh restore $(file)
+
+db-reset:
+	@echo "$(AMARELO)🗑️  Resetando banco de dados...$(NC)"
+	@./scripts/db-commands.sh reset

@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '@users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { generateAccountNumber } from '../common/utils/account.utils';
+import { User } from '../users/entities/user.entity';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { Account } from './entities/account.entity';
 

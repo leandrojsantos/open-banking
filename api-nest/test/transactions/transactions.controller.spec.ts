@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { User } from '@users/entities/user.entity';
+import { User } from '../../src/users/entities/user.entity';
 import { CreateTransactionDto } from '../../src/transactions/dto/create-transaction.dto';
 import { Transaction, TransactionType } from '../../src/transactions/entities/transaction.entity';
 import { TransactionsController } from '../../src/transactions/transactions.controller';

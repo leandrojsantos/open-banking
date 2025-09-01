@@ -39,16 +39,16 @@ async function bootstrap() {
     maxAge: 3600 // 1 hora
   });
 
-  // 5. Configuração Swagger (apenas em desenvolvimento)
-  if (process.env.NODE_ENV !== 'production') {
-    setupSwagger(app);
-    logger.log('Swagger documentation enabled at /api');
-  }
+  // 5. Configuração Swagger (sempre ativo para desenvolvimento)
+  setupSwagger(app);
+  logger.log('Swagger documentation enabled at /api/v1/docs');
 
   // 6. Inicialização do servidor
   await app.listen(port, '0.0.0.0', () => {
     logger.log(`Application is running on port ${port}`);
     logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.log(`Swagger UI: http://localhost:${port}/api/v1/docs`);
+    logger.log(`Health Check: http://localhost:${port}/api/v1/health`);
   });
 }
 

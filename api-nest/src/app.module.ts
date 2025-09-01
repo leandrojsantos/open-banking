@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import { AccountsModule } from './accounts/accounts.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { TransactionsModule } from './transactions/transactions.module';
 import { UsersModule } from './users/users.module';
 
 const getDataSourceOptions = (configService: ConfigService): DataSourceOptions => ({
@@ -39,6 +44,11 @@ const getDataSourceOptions = (configService: ConfigService): DataSourceOptions =
             },
         }),
         UsersModule,
+        AccountsModule,
+        TransactionsModule,
+        AuthModule,
     ],
+    controllers: [AppController],
+    providers: [AppService],
 })
 export class AppModule { }
