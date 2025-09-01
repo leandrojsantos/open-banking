@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { LoginUserDto } from '../users/dto/login-user.dto';
 import { UsersService } from '../users/users.service';
+import { LoginResponseDto } from './dto/login-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -15,10 +17,20 @@ export class AuthService {
         return user;
     }
 
-    async login(user: any) {
+    async login(loginUserDto: LoginUserDto): Promise<LoginResponseDto> {
+        const user = await this.validateUser(loginUserDto.email, loginUserDto.password);
+        
+        if (!user) {
+            throw new Error('Invalid credentials');
+        }
+
         const payload = { email: user.email, sub: user.id };
+        const accessToken = this.jwtService.sign(payload);
+        
         return {
-            access_token: this.jwtService.sign(payload),
+            accessToken,
+            expiresIn: '1d',
+            userId: user.id,
         };
     }
 }

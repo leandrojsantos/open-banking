@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { User } from '@users/entities/user.entity';
 import { AccountsController } from '../../src/accounts/accounts.controller';
 import { AccountsService } from '../../src/accounts/accounts.service';
 import { CreateAccountDto } from '../../src/accounts/dto/create-account.dto';
 import { Account } from '../../src/accounts/entities/account.entity';
+import { AccountType } from '../../src/accounts/enums/account-type.enum';
 import { JwtAuthGuard } from '../../src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../src/common/guards/roles.guard';
-import { User } from '@users/entities/user.entity';
 
 describe('AccountsController', () => {
     let controller: AccountsController;
@@ -42,7 +43,7 @@ describe('AccountsController', () => {
 
     describe('create', () => {
         it('should create an account', async () => {
-            const createAccountDto: CreateAccountDto = { type: 'CHECKING' };
+            const createAccountDto: CreateAccountDto = { type: AccountType.CHECKING };
             const mockAccount = new Account();
 
             jest.spyOn(accountsService, 'create').mockResolvedValue(mockAccount);

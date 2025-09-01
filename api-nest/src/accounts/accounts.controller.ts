@@ -1,18 +1,18 @@
 import {
-    Controller,
-    Post,
     Body,
+    Controller,
     Get,
     Param,
-    UseGuards,
     ParseUUIDPipe,
+    Post,
+    UseGuards,
 } from '@nestjs/common';
-import { AccountsService } from './accounts.service';
-import { CreateAccountDto } from './dto/create-account.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { User } from '@users/entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { User } from '@users/entities/user.entity';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { AccountsService } from './accounts.service';
+import { CreateAccountDto } from './dto/create-account.dto';
 
 @ApiTags('accounts')
 @ApiBearerAuth()

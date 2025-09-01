@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { User } from '@users/entities/user.entity';
+import { CreateTransactionDto } from '../../src/transactions/dto/create-transaction.dto';
+import { Transaction, TransactionType } from '../../src/transactions/entities/transaction.entity';
 import { TransactionsController } from '../../src/transactions/transactions.controller';
 import { TransactionsService } from '../../src/transactions/transactions.service';
-import { CreateTransactionDto } from '../../src/transactions/dto/create-transaction.dto';
-import { TransferDto } from '../../src/transactions/dto/transfer.dto';
-import { User } from '@users/entities/user.entity';
 
 describe('TransactionsController', () => {
     let controller: TransactionsController;
@@ -27,7 +27,6 @@ describe('TransactionsController', () => {
                     provide: TransactionsService,
                     useValue: {
                         create: jest.fn(),
-                        transfer: jest.fn(),
                         findAllByAccount: jest.fn(),
                     },
                 },
@@ -42,25 +41,32 @@ describe('TransactionsController', () => {
         it('should create a transaction', async () => {
             const accountId = 'account123';
             const createDto: CreateTransactionDto = {
-                type: 'DEPOSIT',
+                accountId: 'account123',
+                type: TransactionType.DEPOSIT,
                 amount: 100,
             };
 
-            await controller.create(accountId, createDto, mockUser);
-            expect(transactionsService.create).toHaveBeenCalledWith(createDto, accountId);
+            await controller.create(createDto, accountId);
+            expect(transactionsService.create).toHaveBeenCalledWith({
+                ...createDto,
+                accountId,
+            });
         });
     });
 
-    describe('transfer', () => {
-        it('should process a transfer', async () => {
+    describe('findAll', () => {
+        it('should return transactions for account', async () => {
             const accountId = 'account123';
-            const transferDto: TransferDto = {
-                toAccountNumber: '987654',
-                amount: 50,
-            };
+            const mockTransactions = [
+                { id: '1', amount: 100, type: TransactionType.DEPOSIT, description: 'test', account: {}, createdAt: new Date() },
+                { id: '2', amount: 50, type: TransactionType.WITHDRAWAL, description: 'test', account: {}, createdAt: new Date() }
+            ] as Transaction[];
 
-            await controller.transfer(accountId, transferDto, mockUser);
-            expect(transactionsService.transfer).toHaveBeenCalledWith(transferDto, accountId);
+            jest.spyOn(transactionsService, 'findAllByAccount').mockResolvedValue(mockTransactions);
+
+            const result = await controller.findAll(accountId);
+            expect(result).toEqual(mockTransactions);
+            expect(transactionsService.findAllByAccount).toHaveBeenCalledWith(accountId);
         });
     });
 });

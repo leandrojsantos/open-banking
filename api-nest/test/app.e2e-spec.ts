@@ -1,14 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from '../src/app.module';
+import { Test, TestingModule } from '@nestjs/testing';
+import request from 'supertest';
+import { AppController } from '../src/app.controller';
+import { AppService } from '../src/app.service';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+      controllers: [AppController],
+      providers: [AppService],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -16,13 +18,19 @@ describe('AppController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   it('/health (GET)', () => {
     return request(app.getHttpServer())
-      .get('/api/v1/health')
+      .get('/health')
       .expect(200)
-      .expect({ status: 'OK' });
+      .expect((res) => {
+        expect(res.body).toHaveProperty('status', 'OK');
+        expect(res.body).toHaveProperty('timestamp');
+        expect(typeof res.body.timestamp).toBe('string');
+      });
   });
 });

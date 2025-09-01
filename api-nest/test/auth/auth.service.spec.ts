@@ -1,57 +1,90 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AccountsService } from '../../src/accounts/accounts.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Account } from '../../src/accounts/entities/account.entity';
+import { JwtService } from '@nestjs/jwt';
+import { AuthService } from '../../src/auth/auth.service';
+import { UsersService } from '../../src/users/users.service';
 import { User } from '@users/entities/user.entity';
-import { AccountsRepository } from '../../src/accounts/accounts.repository';
-import { CreateAccountDto } from '../../src/accounts/dto/create-account.dto';
 
-describe('AccountsService', () => {
-    let service: AccountsService;
-    let accountsRepository: AccountsRepository;
+describe('AuthService', () => {
+    let service: AuthService;
+    let usersService: UsersService;
+    let jwtService: JwtService;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
-                AccountsService,
+                AuthService,
                 {
-                    provide: getRepositoryToken(Account),
-                    useClass: AccountsRepository,
+                    provide: UsersService,
+                    useValue: {
+                        findOneByEmail: jest.fn(),
+                    },
                 },
                 {
-                    provide: getRepositoryToken(User),
-                    useValue: {},
+                    provide: JwtService,
+                    useValue: {
+                        sign: jest.fn(),
+                    },
                 },
             ],
         }).compile();
 
-        service = module.get<AccountsService>(AccountsService);
-        accountsRepository = module.get<AccountsRepository>(getRepositoryToken(Account));
+        service = module.get<AuthService>(AuthService);
+        usersService = module.get<UsersService>(UsersService);
+        jwtService = module.get<JwtService>(JwtService);
     });
 
-    describe('create', () => {
-        it('should create an account successfully', async () => {
-            const createAccountDto: CreateAccountDto = { type: 'CHECKING' };
-            const userId = 'user123';
-            const mockAccount = new Account();
+    describe('validateUser', () => {
+        it('should return user if found', async () => {
+            const email = 'test@example.com';
+            const password = 'password123';
+            const mockUser = { id: '1', email, password: 'hashed' } as User;
 
-            jest.spyOn(accountsRepository, 'createAccount').mockResolvedValue(mockAccount);
+            jest.spyOn(usersService, 'findOneByEmail').mockResolvedValue(mockUser);
 
-            const result = await service.create(createAccountDto, userId);
-            expect(result).toBe(mockAccount);
+            const result = await service.validateUser(email, password);
+            expect(result).toBe(mockUser);
+            expect(usersService.findOneByEmail).toHaveBeenCalledWith(email);
+        });
+
+        it('should return null if user not found', async () => {
+            const email = 'test@example.com';
+            const password = 'password123';
+
+            jest.spyOn(usersService, 'findOneByEmail').mockResolvedValue(undefined);
+
+            const result = await service.validateUser(email, password);
+            expect(result).toBeUndefined();
         });
     });
 
-    describe('findAllByUser', () => {
-        it('should return accounts for user', async () => {
-            const userId = 'user123';
-            const mockAccounts = [new Account(), new Account()];
+    describe('login', () => {
+        it('should return access token', async () => {
+            const loginDto = { email: 'test@example.com', password: 'password123' };
+            const mockUser = { id: '1', email: 'test@example.com' } as User;
+            const mockToken = 'jwt-token';
 
-            jest.spyOn(accountsRepository, 'findByUser').mockResolvedValue(mockAccounts);
+            jest.spyOn(service, 'validateUser').mockResolvedValue(mockUser);
+            jest.spyOn(jwtService, 'sign').mockReturnValue(mockToken);
 
-            const result = await service.findAllByUser(userId);
-            expect(result).toEqual(mockAccounts);
-            expect(accountsRepository.findByUser).toHaveBeenCalledWith(userId);
+            const result = await service.login(loginDto);
+            expect(result).toEqual({
+                accessToken: mockToken,
+                expiresIn: '1d',
+                userId: mockUser.id,
+            });
+            expect(service.validateUser).toHaveBeenCalledWith(loginDto.email, loginDto.password);
+            expect(jwtService.sign).toHaveBeenCalledWith({
+                email: mockUser.email,
+                sub: mockUser.id,
+            });
+        });
+
+        it('should throw error for invalid credentials', async () => {
+            const loginDto = { email: 'test@example.com', password: 'wrongpassword' };
+
+            jest.spyOn(service, 'validateUser').mockResolvedValue(undefined);
+
+            await expect(service.login(loginDto)).rejects.toThrow('Invalid credentials');
         });
     });
 });

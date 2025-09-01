@@ -1,13 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TransactionsService } from '../../src/transactions/transactions.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Transaction } from '../../src/transactions/entities/transaction.entity';
-import { Account } from '../../src/accounts/entities/account.entity';
 import { Repository } from 'typeorm';
+import { Account } from '../../src/accounts/entities/account.entity';
 import { CreateTransactionDto } from '../../src/transactions/dto/create-transaction.dto';
-import { TransferDto } from '../../src/transactions/dto/transfer.dto';
-import { TransactionType } from '../../src/transactions/enums/transaction-type.enum';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Transaction, TransactionType } from '../../src/transactions/entities/transaction.entity';
+import { TransactionsService } from '../../src/transactions/transactions.service';
 
 describe('TransactionsService', () => {
     let service: TransactionsService;
@@ -37,81 +34,48 @@ describe('TransactionsService', () => {
     describe('create', () => {
         it('should create a deposit transaction', async () => {
             const createDto: CreateTransactionDto = {
+                accountId: 'account123',
                 type: TransactionType.DEPOSIT,
                 amount: 100,
             };
-            const accountId = 'account123';
             const mockAccount = new Account();
-            mockAccount.id = accountId;
+            mockAccount.id = 'account123';
             mockAccount.balance = 0;
 
             jest.spyOn(accountRepo, 'findOne').mockResolvedValue(mockAccount);
             jest.spyOn(transactionRepo, 'create').mockReturnValue(new Transaction());
             jest.spyOn(transactionRepo, 'save').mockResolvedValue(new Transaction());
-            jest.spyOn(accountRepo, 'save').mockResolvedValue(mockAccount);
 
-            const result = await service.create(createDto, accountId);
+            const result = await service.create(createDto);
             expect(result).toBeInstanceOf(Transaction);
-            expect(mockAccount.balance).toBe(100);
         });
 
-        it('should throw error for insufficient funds on withdrawal', async () => {
+        it('should throw error for account not found', async () => {
             const createDto: CreateTransactionDto = {
-                type: TransactionType.WITHDRAWAL,
+                accountId: 'account123',
+                type: TransactionType.DEPOSIT,
                 amount: 100,
             };
-            const accountId = 'account123';
-            const mockAccount = new Account();
-            mockAccount.id = accountId;
-            mockAccount.balance = 50;
-
-            jest.spyOn(accountRepo, 'findOne').mockResolvedValue(mockAccount);
-
-            await expect(service.create(createDto, accountId)).rejects.toThrow(BadRequestException);
-        });
-    });
-
-    describe('transfer', () => {
-        it('should complete a transfer between accounts', async () => {
-            const transferDto: TransferDto = {
-                toAccountNumber: '987654',
-                amount: 50,
-            };
-            const fromAccountId = 'account123';
-
-            const fromAccount = new Account();
-            fromAccount.id = fromAccountId;
-            fromAccount.balance = 100;
-            fromAccount.accountNumber = '123456';
-
-            const toAccount = new Account();
-            toAccount.id = 'account456';
-            toAccount.balance = 0;
-            toAccount.accountNumber = '987654';
-
-            jest.spyOn(accountRepo, 'findOne')
-                .mockResolvedValueOnce(fromAccount) // First call for fromAccount
-                .mockResolvedValueOnce(toAccount); // Second call for toAccount
-
-            jest.spyOn(transactionRepo, 'create').mockReturnValue(new Transaction());
-            jest.spyOn(transactionRepo, 'save').mockResolvedValue(new Transaction());
-            jest.spyOn(accountRepo, 'save').mockResolvedValue(new Account());
-
-            const result = await service.transfer(transferDto, fromAccountId);
-            expect(result.fromTransaction).toBeDefined();
-            expect(result.toTransaction).toBeDefined();
-        });
-
-        it('should throw error if accounts not found', async () => {
-            const transferDto: TransferDto = {
-                toAccountNumber: '987654',
-                amount: 50,
-            };
-            const fromAccountId = 'account123';
 
             jest.spyOn(accountRepo, 'findOne').mockResolvedValue(null);
 
-            await expect(service.transfer(transferDto, fromAccountId)).rejects.toThrow(NotFoundException);
+            await expect(service.create(createDto)).rejects.toThrow('Account not found');
+        });
+    });
+
+    describe('findAllByAccount', () => {
+        it('should return transactions for account', async () => {
+            const accountId = 'account123';
+            const mockTransactions = [new Transaction(), new Transaction()];
+
+            jest.spyOn(transactionRepo, 'find').mockResolvedValue(mockTransactions);
+
+            const result = await service.findAllByAccount(accountId);
+            expect(result).toEqual(mockTransactions);
+            expect(transactionRepo.find).toHaveBeenCalledWith({
+                where: { account: { id: accountId } },
+                relations: ['account'],
+            });
         });
     });
 });

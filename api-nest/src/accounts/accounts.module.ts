@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Account } from './entities/account.entity';
-import { AccountsService } from './accounts.service';
-import { AccountsController } from './accounts.controller';
 import { User } from '@users/entities/user.entity';
 import { TransactionsModule } from '../transactions/transactions.module';
+import { AccountsController } from './accounts.controller';
+import { AccountsService } from './accounts.service';
+import { Account } from './entities/account.entity';
 
 @Module({
     imports: [
