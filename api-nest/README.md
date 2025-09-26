@@ -1,6 +1,8 @@
 # Open Banking API
 
 API de Open Banking com NestJS, Prisma e PostgreSQL.
+Objetivos Principais Promover Competição: Facilitar a entrada de novas empresas (fintechs) no mercado, quebrando o monopólio de dados dos grandes bancos.
+A API é a ponte tecnológica que permite essa comunicação padronizada.
 
 ## Stack
 
