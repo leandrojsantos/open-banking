@@ -1,67 +1,54 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { setupSwagger } from './config/swagger.config';
-import { getValidationPipe } from './config/validation.config';
-import { ConfigService } from '@nestjs/config';
-import { Logger } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  // 1. Criação da aplicação com logger detalhado
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
-    bufferLogs: true
-  });
+  const app = await NestFactory.create(AppModule);
+  
+  // Validação global
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
 
-  const configService = app.get(ConfigService);
-  const logger = new Logger('Bootstrap');
-  const port = configService.get('PORT') || 3000;
-
-  // 2. Configurações básicas
-  app.useGlobalPipes(getValidationPipe());
-  app.setGlobalPrefix('api/v1');
-
-  // 3. Configuração de proxies e trust proxy
-  app.set('trust proxy', 1);
-
-  // 4. Configuração CORS melhorada
+  // CORS
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN')?.split(',') || '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Accept',
-      'X-Requested-With',
-      'X-CSRF-Token'
-    ],
-    maxAge: 3600 // 1 hora
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
   });
 
-  // 5. Configuração Swagger (sempre ativo para desenvolvimento)
-  setupSwagger(app);
-  logger.log('Swagger documentation enabled at /api/v1/docs');
+  // Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Open Banking API')
+    .setDescription('API para Open Banking com NestJS, Prisma e Clean Code')
+    .setVersion('1.1.1')
+    .addBearerAuth()
+    .addTag('App', 'Informações da aplicação')
+    .addTag('Authentication', 'Autenticação e autorização')
+    .addTag('Users', 'Gestão de usuários')
+    .addTag('Accounts', 'Contas bancárias')
+    .addTag('Transactions', 'Transações financeiras')
+    .addTag('Health', 'Health check')
+    .build();
 
-  // 6. Inicialização do servidor
-  await app.listen(port, '0.0.0.0', () => {
-    logger.log(`Application is running on port ${port}`);
-    logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    logger.log(`Swagger UI: http://localhost:${port}/api/v1/docs`);
-    logger.log(`Health Check: http://localhost:${port}/api/v1/health`);
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'Open Banking API Documentation',
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info .title { font-size: 2.5em; }
+    `,
   });
+
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  
+  console.log(`🚀 Application is running on: http://localhost:${port}`);
+  console.log(`📚 Swagger docs available at: http://localhost:${port}/api/docs`);
+  console.log(`🏥 Health check available at: http://localhost:${port}/health`);
 }
 
-// 7. Tratamento de erros globais
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection at:', reason);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception thrown:', err);
-});
-
-bootstrap().catch((err) => {
-  console.error('Application bootstrap failed:', err);
-  process.exit(1);
-});
+bootstrap();

@@ -1,16 +1,14 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { AppController } from '../src/app.controller';
-import { AppService } from '../src/app.service';
+import { AppModule } from '../src/app.module';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      controllers: [AppController],
-      providers: [AppService],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -28,8 +26,10 @@ describe('AppController (e2e)', () => {
       .get('/health')
       .expect(200)
       .expect((res) => {
-        expect(res.body).toHaveProperty('status', 'OK');
+        expect(res.body).toHaveProperty('status', 'ok');
         expect(res.body).toHaveProperty('timestamp');
+        expect(res.body).toHaveProperty('database', 'connected');
+        expect(res.body).toHaveProperty('version', '1.1.1');
         expect(typeof res.body.timestamp).toBe('string');
       });
   });

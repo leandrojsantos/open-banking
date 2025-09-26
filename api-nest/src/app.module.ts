@@ -1,54 +1,40 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource, DataSourceOptions } from 'typeorm';
-import { AccountsModule } from './accounts/accounts.module';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrismaService } from './infrastructure/database/prisma.service';
 import { AuthModule } from './auth/auth.module';
-import { TransactionsModule } from './transactions/transactions.module';
 import { UsersModule } from './users/users.module';
-
-const getDataSourceOptions = (configService: ConfigService): DataSourceOptions => ({
-    type: 'postgres',
-    host: configService.get<string>('DB_HOST', 'db'),
-    port: configService.get<number>('DB_PORT', 5432),
-    username: configService.get<string>('DB_USER', 'postgres'),
-    password: configService.get<string>('DB_PASSWORD', 'senhasegura'),
-    database: configService.get<string>('DB_NAME', 'open_banking'),
-    entities: [__dirname + '/**/*.entity{.ts,.js}'],
-    migrations: [__dirname + '/migrations/*{.ts,.js}'],
-    synchronize: configService.get<string>('NODE_ENV') === 'development',
-    logging: configService.get<string>('NODE_ENV') !== 'production',
-    migrationsRun: true,
-    poolSize: 10,
-    connectTimeoutMS: 2000,
-});
+import { AccountsModule } from './accounts/accounts.module';
+import { TransactionsModule } from './transactions/transactions.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
-    imports: [
-        ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: '.env',
-            ignoreEnvFile: process.env.NODE_ENV === 'production',
-        }),
-        TypeOrmModule.forRootAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => getDataSourceOptions(configService),
-            dataSourceFactory: async (options) => {
-                const dataSource = new DataSource(options!);
-                await dataSource.initialize();
-                await dataSource.runMigrations();
-                return dataSource;
-            },
-        }),
-        UsersModule,
-        AccountsModule,
-        TransactionsModule,
-        AuthModule,
-    ],
-    controllers: [AppController],
-    providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env'
+    }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minuto
+      limit: 100, // 100 requests por minuto
+    }]),
+    AuthModule,
+    UsersModule,
+    AccountsModule,
+    TransactionsModule
+  ],
+  controllers: [AppController, HealthController],
+  providers: [
+    AppService,
+    PrismaService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    }
+  ]
 })
-export class AppModule { }
+export class AppModule {}

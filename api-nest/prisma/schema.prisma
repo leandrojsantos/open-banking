@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  BANKER
+}
+
+enum AccountType {
+  CHECKING    // Conta Corrente
+  SAVINGS     // Poupança
+  INVESTMENT  // Investimento
+}
+
+enum TransactionType {
+  DEPOSIT     // Depósito
+  WITHDRAWAL  // Saque
+  TRANSFER    // Transferência
+  PAYMENT     // Pagamento
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          UserRole @default(USER)
+  isActive      Boolean  @default(true)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relacionamentos
+  accounts      Account[]
+  transactions  Transaction[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relacionamentos
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id              String      @id @default(uuid())
+  userId          String
+  accountNumber   String      @unique
+  accountType     AccountType
+  balance         Decimal     @default(0) @db.Decimal(15, 2)
+  isActive        Boolean     @default(true)
+  dailyLimit      Decimal     @default(10000) @db.Decimal(15, 2)
+  monthlyLimit    Decimal     @default(100000) @db.Decimal(15, 2)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relacionamentos
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+  transferFrom    Transaction[] @relation("TransferFrom")
+  transferTo      Transaction[] @relation("TransferTo")
+
+  @@map("accounts")
+}
+
+model Transaction {
+  id              String            @id @default(uuid())
+  userId          String
+  accountId       String
+  type            TransactionType
+  status          TransactionStatus @default(PENDING)
+  amount          Decimal           @db.Decimal(15, 2)
+  description     String?
+  reference       String?           @unique
+  
+  // Para transferências
+  fromAccountId   String?
+  toAccountId     String?
+  
+  // Metadados
+  metadata        Json?
+  processedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relacionamentos
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  fromAccount     Account?  @relation("TransferFrom", fields: [fromAccountId], references: [id])
+  toAccount       Account?  @relation("TransferTo", fields: [toAccountId], references: [id])
+
+  @@map("transactions")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  resource    String
+  resourceId  String?
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@map("audit_logs")
+}
