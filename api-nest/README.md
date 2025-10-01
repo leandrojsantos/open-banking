@@ -11,6 +11,9 @@
 - **Modular** por domínio (Auth, Users, Accounts, Transactions)
 - **Repository Pattern** com Prisma ORM
 - **Dependency Injection** com NestJS
+- **BaseService Pattern**
+- **DRY (Don't Repeat Yourself)** aplicado em validações comuns
+- **KISS (Keep It Simple, Stupid)** para código limpo e direto
 
 ### Diagrama de Arquitetura
 
@@ -145,13 +148,18 @@ open-banking-api-nest/
 │   │   ├── transactions.controller.ts # Controlador de transações
 │   │   ├── transactions.service.ts    # Serviço de transações
 │   │   └── transactions.module.ts     # Módulo de transações
+│   ├── common/
+│   │   ├── services/
+│   │   │   └── base.service.ts      # Serviço base com validações comuns
+│   │   ├── decorators/
+│   │   │   └── roles.decorator.ts   # Decorator de roles
+│   │   └── guards/
+│   │       └── roles.guard.ts       # Guard de autorização
 │   ├── infrastructure/
 │   │   └── database/
 │   │       └── prisma.service.ts   # Serviço Prisma
 │   ├── health/
 │   │   └── health.controller.ts    # Health checks
-│   ├── types/
-│   │   └── auth.types.ts           # Tipos de autenticação
 │   ├── app.module.ts               # Módulo principal
 │   └── main.ts                     # Ponto de entrada
 ├── prisma/
@@ -162,7 +170,6 @@ open-banking-api-nest/
 │   └── app.e2e-spec.ts             # Testes E2E
 ├── Containerfile.dev               # Container de desenvolvimento
 ├── podman-compose.dev.yml          # Orquestração
-├── .dockerignore                   # Arquivos ignorados no build
 ├── .eslintrc.js                    # Configuração ESLint
 ├── .prettierrc                     # Configuração Prettier
 ├── .gitignore                      # Arquivos ignorados no Git
@@ -492,7 +499,7 @@ erDiagram
 
 ```prisma
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(uuid())
   email         String    @unique
   password      String
   firstName     String
@@ -505,38 +512,73 @@ model User {
   
   accounts      Account[]
   transactions  Transaction[]
+  sessions      Session[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {
-  id          String      @id @default(cuid())
-  accountNumber String    @unique
-  type        AccountType
-  balance     Decimal     @default(0)
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id              String      @id @default(uuid())
+  userId          String
+  accountNumber   String      @unique
+  accountType     AccountType
+  balance         Decimal     @default(0) @db.Decimal(15, 2)
+  isActive        Boolean     @default(true)
+  dailyLimit      Decimal     @default(10000) @db.Decimal(15, 2)
+  monthlyLimit    Decimal     @default(100000) @db.Decimal(15, 2)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
   
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  transactions Transaction[]
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    Transaction[]
+  transferFrom    Transaction[] @relation("TransferFrom")
+  transferTo      Transaction[] @relation("TransferTo")
 }
 
 model Transaction {
-  id            String          @id @default(cuid())
-  type          TransactionType
-  amount        Decimal
-  description   String?
-  reference     String          @unique
-  status        TransactionStatus @default(PENDING)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id              String            @id @default(uuid())
+  userId          String
+  accountId       String
+  type            TransactionType
+  status          TransactionStatus @default(PENDING)
+  amount          Decimal           @db.Decimal(15, 2)
+  description     String?
+  reference       String?           @unique
   
-  userId        String
-  user          User            @relation(fields: [userId], references: [id])
-  accountId     String
-  account       Account         @relation(fields: [accountId], references: [id])
-  fromAccountId String?
-  toAccountId   String?
+  // Para transferências
+  fromAccountId   String?
+  toAccountId     String?
+  
+  // Metadados
+  metadata        Json?
+  processedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  fromAccount     Account?  @relation("TransferFrom", fields: [fromAccountId], references: [id])
+  toAccount       Account?  @relation("TransferTo", fields: [toAccountId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  resource    String
+  resourceId  String?
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
 }
 ```
 
@@ -812,6 +854,30 @@ podman logs api-nest_db_1
 # Logs em tempo real
 podman logs -f api-nest_app_1
 ```
+
+## ✨ Melhorias Implementadas
+
+### Clean Code & DRY
+- **BaseService**: Criado serviço base com validações comuns para eliminar código duplicado
+- **Validações Centralizadas**: Métodos `validateAccount`, `validateUser`, `checkPermission` reutilizáveis
+- **Geração de Referências**: Método `generateReference` centralizado para transações
+- **Paginação Padronizada**: Método `createPagination` para estrutura consistente
+
+### KISS (Keep It Simple, Stupid)
+- **Código Simplificado**: Removidos comentários desnecessários e código redundante
+- **Métodos Concisos**: Funções menores e mais focadas em uma única responsabilidade
+- **Imports Otimizados**: Apenas imports necessários em cada arquivo
+- **Tratamento de Erros**: Exceções padronizadas e mensagens claras
+
+### Testes
+- **100% de Aprovação**: Todos os testes passando sem erros
+- **Cobertura Mantida**: Funcionalidades testadas e validadas
+- **Mocks Eficientes**: Testes unitários com mocks apropriados
+
+### Estrutura
+- **Organização Melhorada**: Pasta `common/services` para código compartilhado
+- **Separação de Responsabilidades**: Cada serviço com responsabilidade única
+- **Herança Eficiente**: BaseService estendido pelos serviços específicos
 
 ## 📚 Referências
 
